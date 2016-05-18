@@ -75,7 +75,7 @@ def main():
 
             if opt == "--start":
                 if neo4j_status() == ServerStatus.STARTED:
-                    stdout.write("Failed to start neo4j as a neo4j server is already running on this machine.")
+                    stdout.write("Failed to start neo4j as a neo4j server is already running on this machine.\n")
                     exit(2)
                 # parse the opts under --start
                 archive_url, archive_name = neo4j_default_archive()
@@ -92,7 +92,7 @@ def main():
 
             elif opt == "--stop":
                 if neo4j_status() == ServerStatus.STOPPED:
-                    stdout.write("Failed to stop server as no neo4j server is running on this machine.")
+                    stdout.write("Failed to stop server as no neo4j server is running on this machine.\n")
                     exit(2)
                 exit_code = neo4j_stop(neo4j_home=arg) or test_neo4j_status(ServerStatus.STOPPED) or 0
 
@@ -106,20 +106,24 @@ def handle_start(archive_url, archive_name, neo4j_home):
         folder_name=download(archive_url, archive_name, path.dirname(neo4j_home))
         if not path.exists(neo4j_home):
             # the untared name is different from what the user gives
-            rename(folder_name, path.basename(neo4j_home))
+            rename(path.join(path.dirname(neo4j_home), folder_name), neo4j_home)
     if path.exists(KNOWN_HOST):
-        stdout.write("Found an existing known_host file, renaming it to known_host.backup.")
+        stdout.write("Found an existing known_host file, renaming it to known_host.backup.\n")
         rename(KNOWN_HOST, KNOWN_HOST_BACKUP)
-    return neo4j_start(neo4j_home) or test_neo4j_status()
+
+    exit_code = neo4j_start(neo4j_home) or 0
+    if exit_code == 0:
+        exit_code = test_neo4j_status()
+    return exit_code
 
 
 # Test if the neo4j server is started (status = STARTED)
-# or if the neo4j server is stopped (status = STOPPED) within 2 mins.
+# or if the neo4j server is stopped (status = STOPPED) within 1 mins.
 # Return 0 if the test success, otherwise 1
 def test_neo4j_status(status = ServerStatus.STARTED):
     success = False
     start_time = time()
-    timeout = 2*60 # 120s
+    timeout = 60 # 60s
     while not success:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         actual_status = s.connect_ex(("localhost", 7474))

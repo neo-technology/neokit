@@ -33,7 +33,7 @@ from __future__ import print_function
 from urllib import urlretrieve
 from sys import argv, stdout, exit
 import getopt
-from os import path, name
+from os import path, name, makedirs
 from zipfile import ZipFile
 from tarfile import TarFile
 from urlparse import urlparse
@@ -97,17 +97,22 @@ def neo4j_archive(opt, arg):
 
 
 def download(archive_url, archive_name, extract_to_path='.'):
-    stdout.write("Downloading %s...\n" % archive_url)
-    urlretrieve(archive_url, archive_name)
+    # download the file to extract_to_path
+    if not path.exists(extract_to_path):
+        makedirs(extract_to_path)
+
+    archive_path = path.join(extract_to_path, archive_name)
+    stdout.write("Downloading '%s' to '%s'...\n" % (archive_url, archive_path))
+    urlretrieve(archive_url, archive_path)
 
     if archive_name.endswith('.zip'):
-        stdout.write("Unzipping %s...\n" % archive_name)
-        zip_ref = ZipFile(archive_name, 'r')
+        stdout.write("Unzipping '%s' to '%s'...\n" % (archive_path, extract_to_path))
+        zip_ref = ZipFile(archive_path, 'r')
         zip_ref.extractall(extract_to_path)
         zip_ref.close()
     elif archive_name.endswith('.tar.gz'):
-        stdout.write("Unarchiving %s...\n" % archive_name)
-        tar_ref = TarFile.open(archive_name)
+        stdout.write("Unarchiving '%s' to '%s'...\n" % (archive_path, extract_to_path))
+        tar_ref = TarFile.open(archive_path)
         tar_ref.extractall(extract_to_path)
         untar_folder=tar_ref.getnames()[0]
         tar_ref.close()
