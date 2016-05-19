@@ -109,7 +109,9 @@ def download(archive_url, archive_name, extract_to_path='.'):
         stdout.write("Unzipping '%s' to '%s'...\n" % (archive_path, extract_to_path))
         zip_ref = ZipFile(archive_path, 'r')
         zip_ref.extractall(extract_to_path)
+        unzip_folder = zip_ref.namelist()[0]
         zip_ref.close()
+        return unzip_folder
     elif archive_name.endswith('.tar.gz'):
         stdout.write("Unarchiving '%s' to '%s'...\n" % (archive_path, extract_to_path))
         tar_ref = TarFile.open(archive_path)
