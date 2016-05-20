@@ -64,7 +64,11 @@ def main():
             elif opt == "--stop":
                 exit_code = neo4j_stop(neo4j_home=arg) or 0
             elif opt == "--update-password":
-                exit_code = neo4j_update_password("localhost", 7474, "neo4j", "neo4j", new_password=arg) or 0
+                new_password = arg
+                if new_password == 'neo4j':
+                    exit_code = neo4j_update_password("localhost", 7474, "neo4j", "neo4j", "1234") or neo4j_update_password("localhost", 7474, "neo4j", "1234", "neo4j") or 0
+                else:
+                    exit_code = neo4j_update_password("localhost", 7474, "neo4j", "neo4j", new_password) or 0
             else:
                 print("Bad option %s" % opt)
                 exit_code = 1
