@@ -81,14 +81,14 @@ def neo4j_start(neo4j_home):
     if is_windows:
         return powershell([neo4j_home + '/bin/neo4j.bat install-service;', neo4j_home + '/bin/neo4j.bat start'])
     else:
-        call([neo4j_home + "/bin/neo4j", "start"])
+        return call([neo4j_home + "/bin/neo4j", "start"])
 
 
 def neo4j_stop(neo4j_home):
     if is_windows:
         return powershell([neo4j_home + '/bin/neo4j.bat stop;', neo4j_home + '/bin/neo4j.bat uninstall-service'])
     else:
-        call([neo4j_home+"/bin/neo4j", "stop"])
+        return call([neo4j_home+"/bin/neo4j", "stop"])
 
 
 def neo4j_update_password(host, http_port, user, password, new_password):
