@@ -38,7 +38,7 @@ Example: neorun.py -h
 import getopt
 from sys import argv, stdout, exit
 from neoget import neo4j_default_archive, neo4j_archive, download
-from neoctl import neo4j_start, neo4j_stop, neo4j_update_password
+from neoctl import neo4j_start, neo4j_stop, neo4j_update_default_password
 from os import path, rename
 import socket
 from time import time, sleep
@@ -88,7 +88,7 @@ def main():
 
                 exit_code = handle_start(archive_url, archive_name, neo4j_home=arg)
                 if exit_code == 0 and password is not '':
-                    exit_code = neo4j_update_password("localhost", 7474, "neo4j", "neo4j", new_password=start_arg) or 0
+                    exit_code = neo4j_update_default_password("localhost", 7474, new_password=start_arg) or 0
 
             elif opt == "--stop":
                 if neo4j_status() == ServerStatus.STOPPED:

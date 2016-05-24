@@ -64,11 +64,7 @@ def main():
             elif opt == "--stop":
                 exit_code = neo4j_stop(neo4j_home=arg) or 0
             elif opt == "--update-password":
-                new_password = arg
-                if new_password == 'neo4j':
-                    exit_code = neo4j_update_password("localhost", 7474, "neo4j", "neo4j", "1234") or neo4j_update_password("localhost", 7474, "neo4j", "1234", "neo4j") or 0
-                else:
-                    exit_code = neo4j_update_password("localhost", 7474, "neo4j", "neo4j", new_password) or 0
+                exit_code = neo4j_update_default_password("localhost", 7474, new_password=arg) or 0
             else:
                 print("Bad option %s" % opt)
                 exit_code = 1
@@ -89,6 +85,16 @@ def neo4j_stop(neo4j_home):
         return powershell([neo4j_home + '/bin/neo4j.bat stop;', neo4j_home + '/bin/neo4j.bat uninstall-service'])
     else:
         return call([neo4j_home+"/bin/neo4j", "stop"])
+
+
+def neo4j_update_default_password(host, http_port, new_password):
+    exit_code = 0
+    if new_password == 'neo4j':
+        exit_code = neo4j_update_password(host, http_port, "neo4j", "neo4j", "1234") \
+                or neo4j_update_password(host, http_port, "neo4j", "1234", "neo4j")
+    else:
+        exit_code = neo4j_update_password(host, http_port, "neo4j", "neo4j", new_password)
+    return exit_code
 
 
 def neo4j_update_password(host, http_port, user, password, new_password):
