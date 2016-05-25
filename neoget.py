@@ -30,13 +30,23 @@ Example: neoget.py -v 2.3.1
          neoget.py -n 3.0
 """
 from __future__ import print_function
-from urllib import urlretrieve
 from sys import argv, stdout, exit
 import getopt
 from os import path, name, makedirs
 from zipfile import ZipFile
 from tarfile import TarFile
-from urlparse import urlparse
+try:
+    # For Python 3.0 and later
+    from urllib.request import urlretrieve
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import urlretrieve
+
+try:
+    # py v3
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 DIST = "http://dist.neo4j.org"
 NIGHTLY_DIST = "http://alpha.neohq.net/dist"
