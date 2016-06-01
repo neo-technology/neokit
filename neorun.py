@@ -23,16 +23,16 @@ Usage:   neorun.py <cmd=arg>
          --start=path/to/neo4j/home <cmd> [arg]
             : start the neo4j server in the folder specified by the path
                 -v version      : download the version provided if no neo4j detected
-                -n version      : download the nightly version provided if no neo4j found
                 -l download-url : download the neo4j provided by this url if no neo4j found
+                -t teamcity-url : download neo4j provided by this url from teamcity, username:password is needed to access teamcity
                 -p new-password : change the default password to this new password
          --stop=path/to/neo4j/home : stop a neo4j server
          -h                        : show this help message
 
 Example: neorun.py -h
          neorun.py --start=path/to/neo4j/home -v 3.0.1 -p TOUFU
-         neorun.py --start=path/to/neo4j/home -n 3.0 -p TOUFU
-         neorun.py --start=path/to/neo4j/home -n 3.0
+         neorun.py --start=path/to/neo4j/home -t https://username:password@<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path> -p TOUFU
+         neorun.py --start=path/to/neo4j/home -t https://username:password@<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
          neorun.py --stop=path/to/neo4j/home
 """
 import getopt
@@ -61,7 +61,7 @@ def main():
         print_help()
         exit(2)
     try:
-        opts, args = getopt.getopt(argv[1:], "hv:n:l:p:", ["start=", "stop="])
+        opts, args = getopt.getopt(argv[1:], "hv:t:l:p:", ["start=", "stop="])
     except getopt.GetoptError as err:
         print(str(err))
         print_help()
@@ -83,10 +83,10 @@ def main():
                 for start_opt, start_arg in opts:
                     if start_opt == "-p":
                         password = start_arg
-                    elif start_opt in ['-v', '-n', '-l']:
-                        archive_url, archive_name = neo4j_archive(start_opt, start_arg)
+                    elif start_opt in ['-v', '-t', '-l']:
+                        archive_url, archive_name, require_basic_auth = neo4j_archive(start_opt, start_arg)
 
-                exit_code = handle_start(archive_url, archive_name, neo4j_home=arg)
+                exit_code = handle_start(archive_url, archive_name, path.abspath(arg), require_basic_auth)
                 if exit_code == 0 and password is not '':
                     exit_code = neo4j_update_default_password("localhost", 7474, new_password=start_arg) or 0
 
@@ -101,9 +101,9 @@ def main():
     exit(exit_code)
 
 
-def handle_start(archive_url, archive_name, neo4j_home):
+def handle_start(archive_url, archive_name, neo4j_home, require_basic_auth):
     if not path.exists(neo4j_home):
-        folder_name=download(archive_url, archive_name, path.dirname(neo4j_home))
+        folder_name=download(archive_url, archive_name, path.dirname(neo4j_home), require_basic_auth)
         if not path.exists(neo4j_home):
             # the untared name is different from what the user gives
             rename(path.join(path.dirname(neo4j_home), folder_name), neo4j_home)

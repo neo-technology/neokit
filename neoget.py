@@ -21,26 +21,22 @@
 """
 Usage:   neoget.py <cmd> [arg]
          -v neo4j-version: download this specific neo4j enterprise version
-         -n neo4j-version: download this neo4j enterprise nightly version
          -l download-url : download neo4j provided by this url
+         -t teamcity-url : download neo4j provided by this url from teamcity, username:password is needed to access teamcity
          -h              : show this help message
 
 Example: neoget.py -v 2.3.1
          neoget.py -h
-         neoget.py -n 3.0
+         neoget.py -t https://username:password@<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
 """
 from __future__ import print_function
-from sys import argv, stdout, exit
+from sys import argv, stdout, exit, stderr
 import getopt
 from os import path, name, makedirs
 from zipfile import ZipFile
 from tarfile import TarFile
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlretrieve
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib import urlretrieve
+from re import match
+from base64 import b64encode
 
 try:
     # py v3
@@ -48,17 +44,21 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+try:
+    from urllib.request import urlopen, Request
+except ImportError:
+    from urllib2 import urlopen, Request
+
 DIST = "http://dist.neo4j.org"
-NIGHTLY_DIST = "http://alpha.neohq.net/dist"
-NIGHTLY30_UNIX_URL = "http://alpha.neohq.net/dist/neo4j-enterprise-3.0-NIGHTLY-unix.tar.gz"
-NIGHTLY30_WIN_URL = "http://alpha.neohq.net/dist/neo4j-enterprise-3.0-NIGHTLY-windows.zip"
+DEFAULT_UNIX_URL = DIST + "neo4j-enterprise-3.0.2-unix.tar.gz"
+DEFAULT_WIN_URL = DIST + "neo4j-enterprise-3.0.2-windows.zip"
 
 is_windows = (name == 'nt')
 
 
 def main():
     try:
-        opts, args = getopt.getopt(argv[1:], "hv:s:l:")
+        opts, args = getopt.getopt(argv[1:], "hv:l:t:")
     except getopt.GetoptError as err:
         print(str(err))
         print_help()
@@ -70,23 +70,25 @@ def main():
         if opt == '-h':
             print_help()
             exit()
-        elif opt in ('-v', '-n', '-l'):
-            archive_url, archive_name = neo4j_archive(opt, arg)
-    try:
-        download(archive_url, archive_name)
-    finally:
-        ret = 0 if path.exists(archive_name) else 1
-        exit(ret)
+        elif opt in ('-v', '-t', '-l'):
+            archive_url, archive_name, require_basic_auth = neo4j_archive(opt, arg)
+
+    # download to the current dir
+    download(archive_url, archive_name, require_basic_auth=require_basic_auth)
+
+    ret = 0 if path.exists(archive_name) else 1
+    exit(ret)
 
 
 def neo4j_default_archive():
-    archive_url = NIGHTLY30_WIN_URL if is_windows else NIGHTLY30_UNIX_URL
+    archive_url = DEFAULT_UNIX_URL if is_windows else DEFAULT_WIN_URL
     archive_name = path.split(urlparse(archive_url).path)[-1]
     return archive_url, archive_name
 
 
 def neo4j_archive(opt, arg):
     archive_url, archive_name = '', ''
+    require_basic_auth = False
 
     if opt == '-v':
         if is_windows:
@@ -94,26 +96,51 @@ def neo4j_archive(opt, arg):
         else:
             archive_name = "neo4j-enterprise-%s-unix.tar.gz" % arg
         archive_url = "%s/%s" % (DIST, archive_name)
-    elif opt == '-n':
-        if is_windows:
-            archive_name = "neo4j-enterprise-%s-NIGHTLY-windows.zip" % arg
-        else:
-            archive_name = "neo4j-enterprise-%s-NIGHTLY-unix.tar.gz" % arg
-        archive_url = "%s/%s" % (NIGHTLY_DIST, archive_name)
     elif opt == '-l':
         archive_url = arg
         archive_name = path.split(urlparse(archive_url).path)[-1]
-    return archive_url, archive_name
+    elif opt == '-t':
+        archive_url = arg
+        archive_name = path.split(urlparse(archive_url).path)[-1]
+        require_basic_auth = True
+    return archive_url, archive_name, require_basic_auth
 
 
-def download(archive_url, archive_name, extract_to_path='.'):
+def teamcityurlopen(archive_url):
+    matchResult = match("^(.*):\/\/(.*):(.*)@(.*)$", archive_url)
+
+    if not matchResult:
+        stderr.write("Please provide username and password in the url to authenticate to teamcity. Use `-h` for more info.")
+        exit(1)
+
+    user = matchResult.group(2)
+    password = matchResult.group(3)
+    headers = {"Authorization": "Basic " + b64encode((user + ":" + password).encode("utf-8")).decode("ascii")}
+    archive_url = matchResult.group(1) + "://" + matchResult.group(4)
+
+    request = Request(archive_url, headers=headers)
+    return urlopen(request)
+
+
+def download(archive_url, archive_name, extract_to_path='.', require_basic_auth=False):
     # download the file to extract_to_path
+    print(extract_to_path)
     if not path.exists(extract_to_path):
         makedirs(extract_to_path)
 
     archive_path = path.join(extract_to_path, archive_name)
     stdout.write("Downloading '%s' to '%s'...\n" % (archive_url, archive_path))
-    urlretrieve(archive_url, archive_path)
+
+    source = urlopen(archive_url) if not require_basic_auth else teamcityurlopen(archive_url)
+
+    with open(archive_path, "wb") as destination:
+        more = True
+        while more:
+            data = source.read(8192)
+            if data:
+                destination.write(data)
+            else:
+                more = False
 
     if archive_name.endswith('.zip'):
         stdout.write("Unzipping '%s' to '%s'...\n" % (archive_path, extract_to_path))

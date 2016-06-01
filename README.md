@@ -19,15 +19,19 @@ To install a specific Neo4j package version, use `-v` to specify the version:
 python neoget.py -v 3.0.1
 ```
 
-The `-n` option can be used to carry out a download for the latest nightly version of Neo4j.
-```
-python neoget.py -n 3.0
-```
-Then the archive with the version `3.0-NIGHTLY` would be downloaded to local disk
-
 Alternatively, a url could also be used with option `-l` to directly download the Neo4j specified by the url
 ```
 python neoget.py -l http://alpha.neohq.net/dist/neo4j-enterprise-3.0-NIGHTLY-unix.tar.gz
+```
+
+Finally, a useful `-t` option is also included to download a Neo4j archive from a teamcity build when a username and a password are required to access any artifacts on the build.
+```
+neoget.py -t https://username:password@<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+```
+
+The equivalent command to achive the same purpose is
+```
+curl --user username:password -O https://<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
 ```
 
 For a full help page, use `-h`:
@@ -66,9 +70,9 @@ python neorun.py --start=neo4j
 When the script returns, then the server is fully ready for any database tasks.
 
 If no Neo4j server is found in path `./neo4j`, then the default Neo4j server version used in `neoget.py` will be downloaded and installed to `./neo4j`.
-To specify other versions to download when a Neo4j is absent, use `-v`, `-n`, `-l` in a similar way as they are defined in `neoget.py`:
+To specify other versions to download when a Neo4j is absent, use `-v`, `-t`, `-l` in a similar way as they are defined in `neoget.py`:
 ```
-python neorun.py --start=neo4j -n 3.1 -p TOUFU
+python neorun.py --start=neo4j -v 3.0.2 -p s3cr3tP4ssw0rd
 ```
 In the example above, the `-p` option is used to change the default Neo4j password after the server is ready.
 
