@@ -24,15 +24,15 @@ Alternatively, a url could also be used with option `-l` to directly download th
 python neoget.py -l http://alpha.neohq.net/dist/neo4j-enterprise-3.0-NIGHTLY-unix.tar.gz
 ```
 
-Finally, a useful `-t` option is also included to download Neo4j archives from teamcity with basic access authentication. The basic access authentication information required by teamcity could either be provided via environment variable `TEAMCITY_USER` and `TEAMCITY_PASSWORD` or via the url directly with `username:password@` added in front of hostname.
+To install a nightly version, use `-n` to specify the nightly version togther with env var `TEAMCITY_NEO4J_<version>[_WIN]` (such as `TEAMCITY_NEO4J_30NIGHTLY`) to provide the secret teamcity download url for the nightly archives.
+
+Teamcity requires basic access authentication, which could either be provided via environment variable `TEAMCITY_USER` and `TEAMCITY_PASSWORD` or via the url directly with `username:password@` added in front of hostname.
 ```
-export TEAMCITY_USER=username
-export TEAMCITY_PASSWORD=password
-neoget.py -t https://<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+TEAMCITY_USER=username TEAMCITY_PASSWORD=password TEAMCITY_NEO4J_30NIGHTLY=https://<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path> python neoget.py -n 3.0
 ```
 or
 ```
-neoget.py -t https://username:password@<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+TEAMCITY_NEO4J_30NIGHTLY=https://username:password@<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path> python neoget.py -n 3.0
 ```
 
 witch is almost equivalent to

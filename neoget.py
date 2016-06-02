@@ -21,16 +21,13 @@
 """
 Usage:   neoget.py <cmd> [arg]
          -v neo4j-version: download this specific neo4j enterprise version
+         -n neo4j-version: download this specific neo4j enterprise nightly version from teamcity with basic access auth
          -l download-url : download neo4j provided by this url
-         -t teamcity-url : download neo4j provided by this url from teamcity with basic access authentication.
-                           The basic authentication information could be provided either by setting environment variable `TEAMCITY_USER` and `TEAMCITY_PASSWORD`,
-                           or by prepending `username:password@` to the hostname in the url
          -h              : show this help message
 
 Example: neoget.py -v 2.3.1
+         neoget.py -n 3.0
          neoget.py -h
-         neoget.py -t https://username:password@<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
-         neoget.py -t https://<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
 """
 from __future__ import print_function
 from sys import argv, stdout, exit, stderr
@@ -38,7 +35,7 @@ import getopt
 from os import path, name, makedirs, getenv
 from zipfile import ZipFile
 from tarfile import TarFile
-from re import match
+from re import match, sub
 from base64 import b64encode
 
 try:
@@ -61,7 +58,7 @@ is_windows = (name == 'nt')
 
 def main():
     try:
-        opts, args = getopt.getopt(argv[1:], "hv:l:t:")
+        opts, args = getopt.getopt(argv[1:], "hv:n:l:")
     except getopt.GetoptError as err:
         print(str(err))
         print_help()
@@ -73,7 +70,7 @@ def main():
         if opt == '-h':
             print_help()
             exit()
-        elif opt in ('-v', '-t', '-l'):
+        elif opt in ('-v', '-n', '-l'):
             archive_url, archive_name, require_basic_auth = neo4j_archive(opt, arg)
 
     # download to the current dir
@@ -100,13 +97,23 @@ def neo4j_archive(opt, arg):
         else:
             archive_name = "neo4j-enterprise-%s-unix.tar.gz" % arg
         archive_url = "%s/%s" % (DIST, archive_name)
+    elif opt == '-n':
+        if is_windows:
+            archive_name = "neo4j-enterprise-%s-NIGHTLY-windows.zip" % arg
+            url_env_var_name = "TEAMCITY_NEO4J_%sNIGHTLY_WIN" % sub('\.', '', arg)
+        else:
+            archive_name = "neo4j-enterprise-%s-NIGHTLY-unix.tar.gz" % arg
+            url_env_var_name = "TEAMCITY_NEO4J_%sNIGHTLY" % sub('\.', '', arg)
+
+        archive_url = getenv(url_env_var_name)
+        require_basic_auth = True
+        if not archive_url:
+            stderr.write("Failed to load archive url for `%s` due to missing env variable `%s`.\n" % (archive_name, url_env_var_name))
+            exit(1)
+
     elif opt == '-l':
         archive_url = arg
         archive_name = path.split(urlparse(archive_url).path)[-1]
-    elif opt == '-t':
-        archive_url = arg
-        archive_name = path.split(urlparse(archive_url).path)[-1]
-        require_basic_auth = True
     return archive_url, archive_name, require_basic_auth
 
 
