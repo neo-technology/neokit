@@ -22,17 +22,20 @@
 Usage:   neoget.py <cmd> [arg]
          -v neo4j-version: download this specific neo4j enterprise version
          -l download-url : download neo4j provided by this url
-         -t teamcity-url : download neo4j provided by this url from teamcity, username:password is needed to access teamcity
+         -t teamcity-url : download neo4j provided by this url from teamcity with basic access authentication.
+                           The basic authentication information could be provided either by setting environment variable `TEAMCITY_USER` and `TEAMCITY_PASSWORD`,
+                           or by prepending `username:password@` to the hostname in the url
          -h              : show this help message
 
 Example: neoget.py -v 2.3.1
          neoget.py -h
-         neoget.py -t https://username:password@<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+         neoget.py -t https://username:password@<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+         neoget.py -t https://<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
 """
 from __future__ import print_function
 from sys import argv, stdout, exit, stderr
 import getopt
-from os import path, name, makedirs
+from os import path, name, makedirs, getenv
 from zipfile import ZipFile
 from tarfile import TarFile
 from re import match
@@ -50,8 +53,8 @@ except ImportError:
     from urllib2 import urlopen, Request
 
 DIST = "http://dist.neo4j.org"
-DEFAULT_UNIX_URL = DIST + "neo4j-enterprise-3.0.2-unix.tar.gz"
-DEFAULT_WIN_URL = DIST + "neo4j-enterprise-3.0.2-windows.zip"
+DEFAULT_UNIX_URL = DIST + "/neo4j-enterprise-3.0.2-unix.tar.gz"
+DEFAULT_WIN_URL = DIST + "/neo4j-enterprise-3.0.2-windows.zip"
 
 is_windows = (name == 'nt')
 
@@ -64,7 +67,7 @@ def main():
         print_help()
         exit()
 
-    archive_url, archive_name = neo4j_default_archive()
+    archive_url, archive_name, require_basic_auth = neo4j_default_archive()
 
     for opt, arg in opts:
         if opt == '-h':
@@ -81,9 +84,10 @@ def main():
 
 
 def neo4j_default_archive():
-    archive_url = DEFAULT_UNIX_URL if is_windows else DEFAULT_WIN_URL
+    archive_url = DEFAULT_WIN_URL if is_windows else DEFAULT_UNIX_URL
     archive_name = path.split(urlparse(archive_url).path)[-1]
-    return archive_url, archive_name
+    require_basic_auth = False
+    return archive_url, archive_name, require_basic_auth
 
 
 def neo4j_archive(opt, arg):
@@ -107,16 +111,25 @@ def neo4j_archive(opt, arg):
 
 
 def teamcityurlopen(archive_url):
-    matchResult = match("^(.*):\/\/(.*):(.*)@(.*)$", archive_url)
 
-    if not matchResult:
-        stderr.write("Please provide username and password in the url to authenticate to teamcity. Use `-h` for more info.")
-        exit(1)
+    # first try to get the user and password from environment var
+    user = getenv("TEAMCITY_USER")
+    password = getenv("TEAMCITY_PASSWORD")
 
-    user = matchResult.group(2)
-    password = matchResult.group(3)
+    # if not found, try to get it from url directly
+    if not user or not password:
+        matchResult = match("^(.*):\/\/(.*):(.*)@(.*)$", archive_url)
+        if not matchResult:
+            stderr.write("Please either provide `TEAMCITY_USER`, `TEAMCITY_PASSWORD` env variables, "
+                         "or prepend `username:password@` to the hostname in the url to authenticate to teamcity.\n")
+            exit(1)
+
+        user = matchResult.group(2)
+        password = matchResult.group(3)
+        archive_url = matchResult.group(1) + "://" + matchResult.group(4)
+
+    # Create basic access authentication token using username and password found
     headers = {"Authorization": "Basic " + b64encode((user + ":" + password).encode("utf-8")).decode("ascii")}
-    archive_url = matchResult.group(1) + "://" + matchResult.group(4)
 
     request = Request(archive_url, headers=headers)
     return urlopen(request)
@@ -124,7 +137,6 @@ def teamcityurlopen(archive_url):
 
 def download(archive_url, archive_name, extract_to_path='.', require_basic_auth=False):
     # download the file to extract_to_path
-    print(extract_to_path)
     if not path.exists(extract_to_path):
         makedirs(extract_to_path)
 

@@ -8,7 +8,7 @@ Tools for downloading, managing and testing Neo4j servers.
 
 
 ## Neoget
-Neoget is a download script for fetching Neo4j server packages. To download the latest nightly version of Neo4j, simply use:
+Neoget is a download script for fetching Neo4j server packages. To download the latest released version of Neo4j, simply use:
 ```
 python neoget.py
 ```
@@ -24,14 +24,20 @@ Alternatively, a url could also be used with option `-l` to directly download th
 python neoget.py -l http://alpha.neohq.net/dist/neo4j-enterprise-3.0-NIGHTLY-unix.tar.gz
 ```
 
-Finally, a useful `-t` option is also included to download a Neo4j archive from a teamcity build when a username and a password are required to access any artifacts on the build.
+Finally, a useful `-t` option is also included to download Neo4j archives from teamcity with basic access authentication. The basic access authentication information required by teamcity could either be provided via environment variable `TEAMCITY_USER` and `TEAMCITY_PASSWORD` or via the url directly with `username:password@` added in front of hostname.
 ```
-neoget.py -t https://username:password@<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+export TEAMCITY_USER=username
+export TEAMCITY_PASSWORD=password
+neoget.py -t https://<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+```
+or
+```
+neoget.py -t https://username:password@<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
 ```
 
-The equivalent command to achive the same purpose is
+witch is almost equivalent to
 ```
-curl --user username:password -O https://<teamcity_url>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
+curl --user username:password -O https://<teamcity_hostname>/repository/download/<build_type_id>/lastSuccessful/<artifact_path>
 ```
 
 For a full help page, use `-h`:

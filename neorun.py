@@ -24,7 +24,7 @@ Usage:   neorun.py <cmd=arg>
             : start the neo4j server in the folder specified by the path
                 -v version      : download the version provided if no neo4j detected
                 -l download-url : download the neo4j provided by this url if no neo4j found
-                -t teamcity-url : download neo4j provided by this url from teamcity, username:password is needed to access teamcity
+                -t teamcity-url : download neo4j provided by this url from teamcity with basic access authentication.
                 -p new-password : change the default password to this new password
          --stop=path/to/neo4j/home : stop a neo4j server
          -h                        : show this help message
@@ -78,7 +78,7 @@ def main():
                     stdout.write("Failed to start neo4j as a neo4j server is already running on this machine.\n")
                     exit(2)
                 # parse the opts under --start
-                archive_url, archive_name = neo4j_default_archive()
+                archive_url, archive_name, require_basic_auth = neo4j_default_archive()
                 password = ''
                 for start_opt, start_arg in opts:
                     if start_opt == "-p":
