@@ -98,6 +98,7 @@ def neo4j_update_default_password(host, http_port, new_password):
 
 
 def neo4j_update_password(host, http_port, user, password, new_password):
+    print("Changing password...")
     request = Request("http://%s:%s/user/neo4j/password" % (host, http_port),
                       json_dumps({"password": new_password}, ensure_ascii=True).encode("utf-8"),
                       {"Authorization": "Basic " + b64encode((user + ":" + password).encode("utf-8")).decode("ascii"),

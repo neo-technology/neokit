@@ -39,13 +39,13 @@ import getopt
 from sys import argv, stdout, exit
 from neoget import neo4j_default_archive, neo4j_archive, download
 from neoctl import neo4j_start, neo4j_stop, neo4j_update_default_password
-from os import path, rename
+from os import path, rename, getenv
 import socket
 from time import time, sleep
 
 KNOWN_HOST = path.join(path.expanduser("~"), ".neo4j", "known_hosts")
 KNOWN_HOST_BACKUP = KNOWN_HOST + ".backup"
-
+NEORUN_START_ARGS_NAME = "NEORUN_START_ARGS"
 
 class Enum(set):
     def __getattr__(self, name):
@@ -79,18 +79,31 @@ def main():
                     stdout.write("Failed to start neo4j as a neo4j server is already running on this machine.\n")
                     exit(2)
 
+                # get the opts from env
+                env = getenv(NEORUN_START_ARGS_NAME)
+                if env:
+                    stdout.write("WARNING: using env var `NEORUN_START_ARGS=%s`\n" % env)
+                    try:
+                        start_opts, start_args = getopt.getopt(env.split(), "v:n:l:p:")
+                    except getopt.GetoptError as err:
+                        print(str(err))
+                        print_help()
+                        exit(2)
+                else:
+                    start_opts = opts
+
                 # parse the opts under --start
                 archive_url, archive_name, require_basic_auth = neo4j_default_archive()
                 password = ''
-                for start_opt, start_arg in opts:
+                for start_opt, start_arg in start_opts:
                     if start_opt == "-p":
                         password = start_arg
                     elif start_opt in ['-v', '-n', '-l']:
                         archive_url, archive_name, require_basic_auth = neo4j_archive(start_opt, start_arg)
 
                 exit_code = handle_start(archive_url, archive_name, neo4j_home, require_basic_auth)
-                if exit_code == 0 and password is not '':
-                    exit_code = neo4j_update_default_password("localhost", 7474, new_password=start_arg) or 0
+                if exit_code == 0 and password:
+                    exit_code = neo4j_update_default_password("localhost", 7474, new_password=password) or 0
 
             elif opt == "--stop":
                 if neo4j_status() == ServerStatus.STOPPED:
@@ -100,7 +113,7 @@ def main():
 
             if exit_code != 0:
                 break
-    exit(exit_code)
+        exit(exit_code)
 
 
 def handle_start(archive_url, archive_name, neo4j_home, require_basic_auth):
