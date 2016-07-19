@@ -35,7 +35,7 @@ from base64 import b64encode
 from sys import argv, exit
 from os import name
 import getopt
-from subprocess import call, Popen, PIPE
+from subprocess import Popen, PIPE
 try:
     from urllib.request import Request, urlopen, HTTPError
 except ImportError:
@@ -77,14 +77,14 @@ def neo4j_start(neo4j_home):
     if is_windows:
         return powershell([neo4j_home + '/bin/neo4j.bat install-service;', neo4j_home + '/bin/neo4j.bat start'])
     else:
-        return call([neo4j_home + "/bin/neo4j", "start"])
+        return callsysshell([neo4j_home + "/bin/neo4j", "start"])
 
 
 def neo4j_stop(neo4j_home):
     if is_windows:
         return powershell([neo4j_home + '/bin/neo4j.bat stop;', neo4j_home + '/bin/neo4j.bat uninstall-service'])
     else:
-        return call([neo4j_home+"/bin/neo4j", "stop"])
+        return callsysshell([neo4j_home+"/bin/neo4j", "stop"])
 
 
 def neo4j_update_default_password(host, http_port, new_password):
@@ -111,14 +111,17 @@ def neo4j_update_password(host, http_port, user, password, new_password):
         raise RuntimeError("Cannot update password [%s]" % error)
 
 
-def powershell(cmd):
-    cmd = ['powershell.exe'] + cmd
+def callsysshell(cmd):
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
     return_code = p.wait()
     print(out)
     print(err)
     return return_code
+
+def powershell(cmd):
+    cmd = ['powershell.exe'] + cmd
+    return callsysshell(cmd)
 
 
 def print_help():
