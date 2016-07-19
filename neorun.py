@@ -133,12 +133,12 @@ def handle_start(archive_url, archive_name, neo4j_home, require_basic_auth):
 
 
 # Test if the neo4j server is started (status = STARTED)
-# or if the neo4j server is stopped (status = STOPPED) within 1 min.
+# or if the neo4j server is stopped (status = STOPPED) within 4 mins.
 # Return 0 if the test success, otherwise 1
 def test_neo4j_status(status = ServerStatus.STARTED):
     success = False
     start_time = time()
-    timeout = 60 # 60s
+    timeout = 60 * 4 # in seconds
     count = 0
     while not success:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -152,15 +152,16 @@ def test_neo4j_status(status = ServerStatus.STARTED):
         current_time = time()
         if current_time - start_time > timeout:
             # failed to connect to server within timeout
-            stdout.write("Failed to start server in 1 mins\n")
+            stdout.write("Failed to start server in 4 mins\n")
             return 1
 
         count += 1
         if count % 10 == 0:
-            stdout.write("Failed to connect to server with socket status code %s. \n" % [actual_status])
+            stdout.write(".") # print .... to indicate working on it
 
         sleep(0.1) # sleep for 100ms
     # server is started
+    stdout.write("\n")
     return 0
 
 

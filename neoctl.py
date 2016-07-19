@@ -32,7 +32,7 @@ Example: neoctl.py --start=./neo4j-enterprise-3.0.0-M01
 from __future__ import print_function
 from json import dumps as json_dumps
 from base64 import b64encode
-from sys import argv, exit
+from sys import argv, exit, stdout, stderr
 from os import name
 import getopt
 from subprocess import Popen, PIPE
@@ -115,8 +115,8 @@ def callsysshell(cmd):
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     out, err = p.communicate()
     return_code = p.wait()
-    print(out)
-    print(err)
+    stdout.write(out)
+    stderr.write(err)
     return return_code
 
 def powershell(cmd):
