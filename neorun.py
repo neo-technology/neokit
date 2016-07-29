@@ -41,10 +41,9 @@ from neoget import neo4j_default_archive, neo4j_archive, download
 from neoctl import neo4j_start, neo4j_stop, neo4j_update_default_password
 from os import path, rename, getenv
 import socket
-from time import time, sleep
+from time import time, sleep, strftime
 
 KNOWN_HOST = path.join(path.expanduser("~"), ".neo4j", "known_hosts")
-KNOWN_HOST_BACKUP = KNOWN_HOST + ".backup"
 NEORUN_START_ARGS_NAME = "NEORUN_START_ARGS"
 
 class Enum(set):
@@ -123,8 +122,9 @@ def handle_start(archive_url, archive_name, neo4j_home, require_basic_auth):
             # the untared name is different from what the user gives
             rename(path.join(path.dirname(neo4j_home), folder_name), neo4j_home)
     if path.exists(KNOWN_HOST):
-        stdout.write("Found an existing known_host file, renaming it to known_host.backup.\n")
-        rename(KNOWN_HOST, KNOWN_HOST_BACKUP)
+        known_host_backup_name = KNOWN_HOST + strftime("%Y%m%d-%H%M%S") + ".backup"
+        stdout.write("Found an existing known_host file, renaming it to %s.\n" % (known_host_backup_name))
+        rename(KNOWN_HOST, known_host_backup_name)
 
     exit_code = neo4j_start(neo4j_home) or 0
     if exit_code == 0:
