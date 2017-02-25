@@ -50,8 +50,8 @@ except ImportError:
     from urllib2 import urlopen, Request
 
 DIST = "http://dist.neo4j.org"
-DEFAULT_UNIX_URL = DIST + "/neo4j-enterprise-3.0.2-unix.tar.gz"
-DEFAULT_WIN_URL = DIST + "/neo4j-enterprise-3.0.2-windows.zip"
+DEFAULT_UNIX_URL = DIST + "/neo4j-enterprise-3.1.1-unix.tar.gz"
+DEFAULT_WIN_URL = DIST + "/neo4j-enterprise-3.1.1-windows.zip"
 
 is_windows = (name == 'nt')
 
