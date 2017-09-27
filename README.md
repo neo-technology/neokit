@@ -58,9 +58,9 @@ Similarly, to stop a server, use the `stop` command:
 python neoctl.py --stop=neo4j
 ```
 
-To change the default passowrd of a Neo4j server, simply use
+To change the default password of a Neo4j server, simply use
 ```
-python neoctrl.py --update-passowrd=s3cr3tP4ssw0rd
+python neoctrl.py --update-password=s3cr3tP4ssw0rd
 ```
 
 
